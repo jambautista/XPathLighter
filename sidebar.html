@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>XPathLighter</title>
+    <link rel="stylesheet" href="stylesheet.css">
+</head>
+<body>
+    <div class="container">
+        <h2>XPathLighter</h2>
+        <!-- Start/Stop Detection Button -->
+        <button id="toggle-detection">Start Detection</button>
+
+        <!-- Detection Mode Switch -->
+        <div class="mode-switch">
+            <label>
+                <input type="radio" name="detection-mode" value="single" checked>
+                Single Element
+            </label>
+            <label>
+                <input type="radio" name="detection-mode" value="batch">
+                Batch Element
+            </label>
+        </div>
+
+        <!-- XPath and CSS Display with Copy Buttons -->
+        <div class="selector-container">
+            <input id="xpath-selector" class="selector-input" readonly placeholder="XPath will appear here">
+            <button class="copy-btn" onclick="copyToClipboard('xpath-selector', 'XPath')">📋</button>
+        </div>
+
+        <div class="selector-container">
+            <input id="css-selector" class="selector-input" readonly placeholder="CSS will appear here">
+            <button class="copy-btn" onclick="copyToClipboard('css-selector', 'CSS Selector')">📋</button>
+        </div>
+
+        <!-- Table for Batch Element Mode (Scrollable Body) -->
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 30%;">Selector Label</th>
+                        <th style="width: 55%;">Selector Value</th>
+                        <th style="width: 15%;">Action</th>
+                    </tr>
+                </thead>
+            </table>
+            <div class="table-body-container">
+                <table>
+                    <tbody class="generatedLocators" id="locatorTableBody">
+                        <!-- Detected locators will be added here dynamically via JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Export Locators Button -->
+        <button id="export-locators">Export Locators</button>
+        <button id="clear-table">Clear Table</button>
+
+        <!-- AI Validation Container with Optimize and Copy Button -->
+        <div class="validation-container">
+            <input id="check-locator-xpath" class="selector-input" placeholder="AI Validated Locator">
+            <button id="validate-locator-xpath" onclick="optimizeLocator()">Optimize</button>
+            <button class="copy-btn" onclick="copyToClipboard('check-locator-xpath')">📋</button>
+        </div>
+        <div class="validation-container">
+            <input id="check-locator-css" class="selector-input" placeholder="AI Validated Locator">
+            <button id="validate-locator-css" onclick="optimizeLocator()">Optimize</button>
+            <button class="copy-btn" onclick="copyToClipboard('check-locator-css')">📋</button>
+        </div>
+    </div>
+    <script src="sidebar.js"></script>
+</body>
