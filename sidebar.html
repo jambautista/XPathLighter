@@ -34,23 +34,52 @@
             <button class="copy-btn" onclick="copyToClipboard('css-selector', 'CSS Selector')">📋</button>
         </div>
 
-        <!-- Table for Batch Element Mode (Scrollable Body) -->
-        <div class="table-container">
-            <table>
-                <thead>
-                    <tr>
-                        <th style="width: 30%;">Selector Label</th>
-                        <th style="width: 55%;">Selector Value</th>
-                        <th style="width: 15%;">Action</th>
-                    </tr>
-                </thead>
-            </table>
-            <div class="table-body-container">
+        <!-- Table for Batch Element Mode -->
+        <div class="tab-container">
+            <!-- Tabs for Switching Between XPath and CSS -->
+            <div class="tabs">
+                <button class="tab active" id="xpath-tab">XPath</button>
+                <button class="tab" id="css-tab">CSS</button>
+            </div>
+        
+            <!-- Table for Batch Element Mode -->
+            <div class="table-container" id="xpath-table">
                 <table>
-                    <tbody class="generatedLocators" id="locatorTableBody">
-                        <!-- Detected locators will be added here dynamically via JavaScript -->
-                    </tbody>
+                    <thead>
+                        <tr>
+                            <th style="width: 30%;">Selector Label</th>
+                            <th style="width: 55%;">Selector Value</th>
+                            <th style="width: 15%;">Action</th>
+                        </tr>
+                    </thead>
                 </table>
+                <div class="table-body-container">
+                    <table>
+                        <tbody class="generatedLocators" id="xpathTableBody">
+                            <!-- Detected Locators -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        
+           
+            <div class="table-container hidden" id="css-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 30%;">Selector Label</th>
+                            <th style="width: 55%;">Selector Value</th>
+                            <th style="width: 15%;">Action</th>
+                        </tr>
+                    </thead>
+                </table>
+                <div class="table-body-container">
+                    <table>
+                        <tbody class="generatedLocators" id="cssTableBody">
+                               <!-- Detected Locators -->
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
 

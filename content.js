@@ -1,9 +1,7 @@
 //Checks if a browser window is open
 if (!window.hasRun) {
   window.hasRun = true;  
-
-  console.log("Content script loaded and running");  //Print a log in console to determine extension is working
-
+  console.log("Content script loaded and running");
   let selectedElement = null;
   let detectionActive = false;
 
@@ -12,10 +10,8 @@ if (!window.hasRun) {
     detectionActive = true;
     document.body.style.cursor = 'crosshair';
     console.log("Detection mode activated.");
-
     document.addEventListener('mouseover', highlightElement); //This highlights the elements in the browser
     document.addEventListener('click', handleElementClick, true); //This is trigerred upon click
-
   }
 
   //Stop element detection
@@ -23,11 +19,9 @@ if (!window.hasRun) {
     detectionActive = false;
     document.body.style.cursor = 'default'; 
     console.log("Detection mode deactivated.");
-
     //Remove event listeners
     document.removeEventListener('mouseover', highlightElement);
     document.removeEventListener('click', handleElementClick, true);
-
     //Remove the previous highlight
     if (selectedElement) {
       selectedElement.style.outline = "";
@@ -39,7 +33,7 @@ if (!window.hasRun) {
   function highlightElement(event) {
     if (!detectionActive) {
       console.log("Detection is not active, skipping highlight.");
-      return;  // Exit if detection is not active
+      return;  //Exit if detection is not active
     }
 
     //Remove previous highlight
@@ -53,56 +47,51 @@ if (!window.hasRun) {
     console.log("Hovered element:", selectedElement);
   }
 
-
-//Function to get elements
-function handleElementClick(event) {
-  if (!detectionActive) {
-    console.log("Detection is not active, skipping click handling.");
-    return;
-  }
-
-  event.preventDefault();  //Prevent default click behavior
-  event.stopPropagation();  //Stop the recurring of an event.
-
-  const element = event.target;
-  const xpath = generateXPath(element);
-  const cssSelector = generateCSSSelector(element);
-
-  console.log("Detected XPath:", xpath);
-  console.log("Detected CSS Selector:", cssSelector);
-
-  copyToClipboard(xpath); //Call Copy-to-Clipboard function
-
-   //Display the XPath in the sidebar of the DevTool
-  chrome.runtime.sendMessage({ action: 'displayXpath', xpath, cssSelector }, (response) => {
-    if (chrome.runtime.lastError) {
-      console.error("Error sending message to sidebar:", chrome.runtime.lastError.message);
-    } else {
-      console.log("XPath and CSS Selector sent to sidebar successfully:", response);
+  // Function to handle click events on elements
+  function handleElementClick(event) {
+    if (!detectionActive) {
+      console.log("Detection is not active, skipping click handling.");
+      return;
     }
-  });
 
-  alert(`XPath copied: ${xpath}`); //Display an alert for the detected XPath
-}
+    event.preventDefault(); //Prevent default click behavior
+    event.stopPropagation(); //Stop event propagation
 
+    const element = event.target;
+    const xpath = generateXPath(element);
+    const cssSelector = generateCSSSelector(element);
 
-//Function to copy the XPath to clipboard
-function copyToClipboard(text) {
-  const tempTextArea = document.createElement("textarea");
-  tempTextArea.value = text;
-  document.body.appendChild(tempTextArea);
-  tempTextArea.select();
-  document.execCommand("copy");
-  document.body.removeChild(tempTextArea);
-}
+    console.log("Detected XPath:", xpath);
+    console.log("Detected CSS Selector:", cssSelector);
+
+    // Always send both XPath and CSS Selector to the sidebar for processing
+    try {
+      chrome.runtime.sendMessage(
+        { action: 'displayLocator', xpath, cssSelector },
+        (response) => {
+          if (chrome.runtime.lastError) {
+            console.error("Error sending message to sidebar:", chrome.runtime.lastError.message);
+          } else if (response) {
+            console.log("XPath and CSS Selector sent to sidebar successfully:", response);
+          } else {
+            console.warn("No response from sidebar. It might not be listening.");
+          }
+        }
+      );
+    } catch (error) {
+      console.error("Error: Unable to send message to sidebar. Extension context might be invalidated.", error);
+    }
+  }
 
   //This is a function where the user can interact with the extension.
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    console.log("Message received in content script:", message);  // Debugging log
+    console.log("Message received in content script:", message);  
     if (message.action === 'startDetection') {
+      detectionActive = true;
       startDetection();
       sendResponse({ status: "Detection started" });
     } else if (message.action === 'stopDetection') {
+      detectionActive = false;
       stopDetection();
       sendResponse({ status: "Detection stopped" });
     } else {
@@ -140,90 +129,90 @@ function copyToClipboard(text) {
     return `//${parts.join('/')}`;
   }
 
-//Function to generate a more optimized relative CSS selector for an element
-function generateCSSSelector(element) {
-  if (!element || element.nodeType !== Node.ELEMENT_NODE) {
-    return null;
-  }
+  //Function to generate a more optimized relative CSS selector for an element
+  function generateCSSSelector(element) {
+    if (!element || element.nodeType !== Node.ELEMENT_NODE) {
+      return null;
+    }
 
-  //If the element has an ID, use the ID
-  if (element.id) { return `#${element.id}`; }
+    //If the element has an ID, use the ID
+    if (element.id) { return `#${element.id}`; }
 
-  //Create a path by to make a DOM tree
-  let path = [];
-  let currentElement = element;
+    //Create a path by to make a DOM tree
+    let path = [];
+    let currentElement = element;
 
-  while (currentElement && currentElement.nodeType === Node.ELEMENT_NODE) {
-    let selector = currentElement.tagName.toLowerCase();
-    //Use class if the class there are no other element attribute
-    if (currentElement.className) {
-      const classes = currentElement.className.trim().split(/\s+/);
-      //Filter generic class names to get more consistent CSS Locator
-      const filteredClasses = classes.filter(cls => !isGenericClass(cls));
-      if (filteredClasses.length > 0) { 
-        selector += `.${filteredClasses.join('.')}`; 
+    while (currentElement && currentElement.nodeType === Node.ELEMENT_NODE) {
+      let selector = currentElement.tagName.toLowerCase();
+      //Use class if the class there are no other element attribute
+      if (currentElement.className) {
+        const classes = currentElement.className.trim().split(/\s+/);
+        //Filter generic class names to get more consistent CSS Locator
+        const filteredClasses = classes.filter(cls => !isGenericClass(cls));
+        if (filteredClasses.length > 0) { 
+          selector += `.${filteredClasses.join('.')}`; 
+        }
+      }
+      //Validate if selector is unique within the document context
+      /*Check Path is greater than 0, which means it could be a potential CSS Selector.
+      If yes, join it together and store as 'selector'
+      */
+      const potentialSelector = path.length > 0 ? `${selector} > ${path.join(' > ')}` : selector;
+      if (isUniqueSelector(potentialSelector, element)) {
+        path.unshift(selector);
+        break;
+      }
+      path.unshift(selector);  //Push the detected selector in the path array.
+      currentElement = currentElement.parentElement; //Set the current element value
+
+      //Check if ID can still be used.
+      if (currentElement && currentElement.id) {
+        path.unshift(`#${currentElement.id}`);
+        break;
       }
     }
-    //Validate if selector is unique within the document context
-    /*Check Path is greater than 0, which means it could be a potential CSS Selector.
-    If yes, join it together and store as 'selector'
-    */
-    const potentialSelector = path.length > 0 ? `${selector} > ${path.join(' > ')}` : selector;
-    if (isUniqueSelector(potentialSelector, element)) {
-      path.unshift(selector);
-      break;
+
+    const cssSelector = path.join(' > '); //'>' parent-elem -> child-elem
+    console.log("Generated Optimized CSS Selector:", cssSelector);
+    return cssSelector;
+  }
+
+  //Function to filter out generic class names for css selector
+  function isGenericClass(className) {
+    const genericClassPatterns = [
+      /^col-/, /^row$/, /^container$/, /^btn$/, /^header$/, /^footer$/, /^section$/,
+      /^item$/, /^list$/, /^card$/, /^box$/, /^wrapper$/, /^content$/, /^module$/,
+      /^input$/, /^field$/, /^link$/, /^text$/, /^title$/, /^image$/, /^icon$/, /^nav$/,
+      /^button$/, /^form$/, /^panel$/, /^grid$/, /^label$/, /^dropdown$/, /^popup$/,
+      /^tab$/, /^toolbar$/, /^sidebar$/, /^menu$/, /^alert$/
+    ];
+    //Some -> checks array pattern that matches the provided className. test -> checks if the className exists in the pattern.
+    return genericClassPatterns.some(pattern => pattern.test(className.toLowerCase())); 
+  }
+
+  //Check if CSS selector is unique
+  function isUniqueSelector(selector, element) {
+    try {
+      const matches = document.querySelectorAll(selector);
+      return matches.length === 1 && matches[0] === element;
+    } catch (error) {
+      console.error("Error evaluating selector:", selector, error);
+      return false;
     }
-    path.unshift(selector);  //Push the detected selector in the path array.
-    currentElement = currentElement.parentElement; //Set the current element value
+  }
 
-    //Check if ID can still be used.
-    if (currentElement && currentElement.id) {
-      path.unshift(`#${currentElement.id}`);
-      break;
+
+  //Check if XPath is unique
+  function isUniqueXPath(xpath, element) {
+    try {
+      //Check XPaths in the document if the detected XPath is unique
+      const result = document.evaluate(xpath, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null); 
+      return result.snapshotLength === 1 && result.snapshotItem(0) === element;
+    } catch (error) {
+      console.error("Error evaluating XPath:", xpath, error);
+      return false; 
     }
   }
-
-  const cssSelector = path.join(' > '); //'>' parent-elem -> child-elem
-  console.log("Generated Optimized CSS Selector:", cssSelector);
-  return cssSelector;
-}
-
-//Function to filter out generic class names for css selector
-function isGenericClass(className) {
-  const genericClassPatterns = [
-    /^col-/, /^row$/, /^container$/, /^btn$/, /^header$/, /^footer$/, /^section$/,
-    /^item$/, /^list$/, /^card$/, /^box$/, /^wrapper$/, /^content$/, /^module$/,
-    /^input$/, /^field$/, /^link$/, /^text$/, /^title$/, /^image$/, /^icon$/, /^nav$/,
-    /^button$/, /^form$/, /^panel$/, /^grid$/, /^label$/, /^dropdown$/, /^popup$/,
-    /^tab$/, /^toolbar$/, /^sidebar$/, /^menu$/, /^alert$/
-  ];
-  //Some -> checks array pattern that matches the provided className. test -> checks if the className exists in the pattern.
-  return genericClassPatterns.some(pattern => pattern.test(className.toLowerCase())); 
-}
-
-//Check if CSS selector is unique
-function isUniqueSelector(selector, element) {
-  try {
-    const matches = document.querySelectorAll(selector);
-    return matches.length === 1 && matches[0] === element;
-  } catch (error) {
-    console.error("Error evaluating selector:", selector, error);
-    return false;
-  }
-}
-
-
-//Check if XPath is unique
-function isUniqueXPath(xpath, element) {
-  try {
-    //Check XPaths in the document if the detected XPath is unique
-    const result = document.evaluate(xpath, document, null, XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null); 
-    return result.snapshotLength === 1 && result.snapshotItem(0) === element;
-  } catch (error) {
-    console.error("Error evaluating XPath:", xpath, error);
-    return false; 
-  }
-}
 
   //Crete a TreeNode class to represent elements in a tree hierarchy
   class TreeNode {

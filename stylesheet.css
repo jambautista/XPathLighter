@@ -131,6 +131,40 @@ h2 {
   background-color: #555;
 }
 
+/* Tab Container */
+.tab-container {
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+/* Tabs */
+.tabs {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.tab {
+  padding: 10px 20px;
+  cursor: pointer;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  background-color: #f9f9f9;
+  font-weight: bold;
+}
+
+.tab.active {
+  background-color: #F4C13F;
+  border: 1px solid #F4C13F;
+  color: black;
+}
+
+/* Hidden Table */
+.hidden {
+  display: none;
+}
+
 /*Generated Locators Table*/
 .table-container {
   width: 100%;
@@ -336,7 +370,7 @@ th {
   margin-bottom: 12px;
 }
 
-#export-locators:hover {
+#export-locators:hover #clear-table:hover{
   background-color: #E5B437;
 }
 
