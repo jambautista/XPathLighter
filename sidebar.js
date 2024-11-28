@@ -26,7 +26,7 @@ function displayLocatorInSidebar(xpath, cssSelector) {
     }
 
   } else {
-    // Single Element Detection Mode - Update input fields
+    //Single Element Detection Mode - Update input fields
     const xpathInput = document.getElementById('xpath-selector');
     const cssInput = document.getElementById('css-selector');
 
@@ -46,75 +46,68 @@ function displayLocatorInSidebar(xpath, cssSelector) {
   }
 }
 
+//Set is used to filter duplicated locators
+const addedLocators = new Set();
 
-//Function to add a locator to the appropriate table
 function addLocatorToTable(locator, type) {
-  //Determine the appropriate table based on the type
-  const tableBodyId = type === 'xpath' ? 'xpathTableBody' : 'cssTableBody';
-  const tableBody = document.getElementById(tableBodyId);
-
+  const tableBody = document.getElementById(type === 'xpath' ? 'xpathTableBody' : 'cssTableBody');
   if (!tableBody) {
     console.error(`Table body not found for type: ${type}`);
     return;
   }
 
-  //Validate the locator format for XPath or CSS
-  const isXPath = locator.startsWith('//');
-  const isCSS = !locator.startsWith('//');
+  //Normalize locator for storage
+  const normalizedLocator = locator.trim().toLowerCase();
 
-  if ((type === 'xpath' && !isXPath) || (type === 'css' && !isCSS)) {
-    console.warn(`Skipping invalid locator for ${type.toUpperCase()} table:`, locator);
+  //Check if locator is already added using the Set
+  if (addedLocators.has(normalizedLocator)) {
+    console.warn(`${type.toUpperCase()} locator already exists in the table:`, locator);
     return;
   }
 
-  // Check if the locator already exists in the table
-  const existingRows = Array.from(tableBody.querySelectorAll('tr'));
-  for (const row of existingRows) {
-    const valueCell = row.querySelector('td:nth-child(2)');
-    if (valueCell && valueCell.textContent === locator) {
-      console.warn(`${type.toUpperCase()} locator already exists in the table:`, locator);
-      return;
-    }
-  }
+  //Add the locator to the Set for tracking
+  addedLocators.add(normalizedLocator);
 
-  //Create a new row for the detected locator
+  //Create a new row for the locator
   const row = document.createElement('tr');
   row.className = 'detectedLocators';
 
-  //Generate a label for the locator
-  const label = type === 'xpath' ? generateLabelFromXPath(locator) : generateLabelFromCSS(locator);
-
-  //Label cell with auto-generated label
+  //Create the label cell
   const labelCell = document.createElement('td');
   const labelInput = document.createElement('input');
   labelInput.type = 'text';
-  labelInput.value = label; // Auto-generate label
   labelInput.className = 'label-input';
+  labelInput.value = type === 'xpath' ? generateLabelFromXPath(locator) : generateLabelFromCSS(locator);
   labelCell.appendChild(labelInput);
 
-  //Value cell
+  //Create the locator value cell
   const valueCell = document.createElement('td');
   valueCell.textContent = locator;
 
-  //Action cell with Copy button
+  //Create the action cell with a Copy button
   const actionCell = document.createElement('td');
   const copyButton = document.createElement('button');
   copyButton.className = 'copy-table-btn';
   copyButton.textContent = 'Copy';
+  
+  //Add copy functionality to the button
   copyButton.addEventListener('click', () => {
     copyToClipboard(locator);
     alert(`${type.toUpperCase()} locator copied to clipboard!`);
   });
+  
   actionCell.appendChild(copyButton);
 
-  //Append cells to the row
+  //Append all cells to the row
   row.appendChild(labelCell);
   row.appendChild(valueCell);
   row.appendChild(actionCell);
 
   //Append the row to the correct table body
   tableBody.appendChild(row);
+  console.log(`Successfully added ${type.toUpperCase()} locator to table: "${locator}"`);
 }
+
 
 
 //Helper function to auto-generate a label for XPath
@@ -143,17 +136,17 @@ function generateLabelFromXPath(xpath) {
 //Helper function to auto-generate a label for CSS
 function generateLabelFromCSS(cssSelector) {
   //Extract tag name, ID, and class from CSS Selector
-  const tagMatch = cssSelector.match(/^(\w+)/); // Extract tag name
+  const tagMatch = cssSelector.match(/^(\w+)/); //Extract tag name
   const tagName = tagMatch ? tagMatch[1] : 'Element';
 
   const idMatch = cssSelector.match(/#([^.\s]+)/); //Match ID in CSS (#id)
   const classMatch = cssSelector.match(/\.(\w+)/); //Match first class in CSS (.class)
 
   if (idMatch) {
-    // Use tagName + ID
+    //Use tagName + ID
     return `${tagName}_${idMatch[1]}`;
   } else if (classMatch) {
-    // Use tagName + first class
+    //Use tagName + first class
     return `${tagName}_${classMatch[1]}`;
   } else {
     return `${tagName}_Element`;
@@ -192,51 +185,41 @@ function clearLocators() {
   console.log("Locator tables cleared.");
 }
 
+//Function to generate CSV content from a table body
+function generateCSVContent(tableBody) {
+  let csvContent = "data:text/csv;charset=utf-8,";
+  csvContent += "Selector Label,Selector Value\n"; //Add headers
+
+  const rows = tableBody.querySelectorAll('tr');
+
+  rows.forEach(row => {
+    const cells = row.querySelectorAll('td');
+    const labelInput = cells[0].querySelector('input');
+    //Get value from the labelInput field, if not, leave blank
+    const label = labelInput ? labelInput.value : ''; 
+    //Get selector value
+    const value = cells[1].textContent; 
+    csvContent += `${label},${value}\n`;
+  });
+
+  return csvContent;
+}
+
 //Function to export locators as CSV for both XPath and CSS tables
 function exportLocators() {
   const xpathTableBody = document.getElementById('xpathTableBody');
   const cssTableBody = document.getElementById('cssTableBody');
 
-  if (!xpathTableBody && !cssTableBody) {
-    alert("No tables found to export.");
+  if (xpathTableBody.rows.length === 0 && cssTableBody.rows.length === 0) {
+    alert("No elements to export.");
     return;
-  }
-
-  //Function to generate CSV content from a table body
-  function generateCSVContent(tableBody) {
-    let csvContent = "data:text/csv;charset=utf-8,";
-    csvContent += "Selector Label,Selector Value\n"; //Add headers
-
-    const rows = tableBody.querySelectorAll('tr');
-
-    if (rows.length === 0) {
-      return null; //No rows to export
-    }
-
-    rows.forEach(row => {
-      const cells = row.querySelectorAll('td');
-      const labelInput = cells[0].querySelector('input');
-      //Get value from the labelInput field, if not, leave blank
-      const label = labelInput ? labelInput.value : ''; 
-      //Get selector value
-      const value = cells[1].textContent; 
-      csvContent += `${label},${value}\n`;
-    });
-
-    return csvContent;
   }
 
   //Export XPath table
   if (xpathTableBody) {
     const xpathCSVContent = generateCSVContent(xpathTableBody);
     if (xpathCSVContent) {
-      const xpathEncodedUri = encodeURI(xpathCSVContent);
-      const xpathLink = document.createElement("a");
-      xpathLink.setAttribute("href", xpathEncodedUri);
-      xpathLink.setAttribute("download", "xpath_locators.csv");
-      document.body.appendChild(xpathLink); //Required for Firefox
-      xpathLink.click();
-      document.body.removeChild(xpathLink); //Clean up
+      downloadCSV(xpathCSVContent, "xpath_locators.csv");
     } else {
       console.log("No rows in XPath table to export.");
     }
@@ -246,99 +229,143 @@ function exportLocators() {
   if (cssTableBody) {
     const cssCSVContent = generateCSVContent(cssTableBody);
     if (cssCSVContent) {
-      const cssEncodedUri = encodeURI(cssCSVContent);
-      const cssLink = document.createElement("a");
-      cssLink.setAttribute("href", cssEncodedUri);
-      cssLink.setAttribute("download", "css_locators.csv");
-      document.body.appendChild(cssLink);
-      cssLink.click();
-      document.body.removeChild(cssLink); 
+      downloadCSV(cssCSVContent, "css_locators.csv");
     } else {
       console.log("No rows in CSS table to export.");
     }
   }
 }
 
+//Function to download CSV content
+function downloadCSV(csvContent, fileName) {
+  const encodedUri = encodeURI(csvContent);
+  const link = document.createElement("a");
+  link.setAttribute("href", encodedUri);
+  link.setAttribute("download", fileName);
+  document.body.appendChild(link); //Required for Firefox
+  link.click();
+  document.body.removeChild(link); //Clean up
+}
+
+//Utility function to toggle the loading state
+function toggleLoadingState(loadingSpinner, button, isLoading) {
+  if (loadingSpinner) {
+    loadingSpinner.style.display = isLoading ? 'block' : 'none';
+  }
+  if (button) {
+    button.disabled = isLoading;
+    button.textContent = isLoading ? 'Optimizing...' : 'Optimize';
+  }
+}
+
 //Function to call the Cloud Function for optimizing the locator
 async function optimizeLocator(locator, type) {
+  const loadingSpinner = document.getElementById('loading-spinner');
+  const button = document.getElementById(`validate-locator-${type}`);
+
+  //Show loading state
+  toggleLoadingState(loadingSpinner, button, true);
+
   try {
+    //Log the locator and type before making the request
+    console.log(`Optimizing ${type.toUpperCase()} Locator:`, locator);
+
+    //Make the request
     const response = await fetch(
       "https://us-central1-artful-logic-438218-g4.cloudfunctions.net/optimize-locators",
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ locator }),
+        body: JSON.stringify({ locator, type }),
       }
     );
 
-    if (response.ok) {
-      const data = await response.json();
-      console.log(`Optimized ${type.toUpperCase()} Locator:`, data.optimizedLocator);
-      return data.optimizedLocator;
-    } else {
-      console.error("Request failed:", response.status, response.statusText);
-      return null;
+    //Handle the response
+    if (!response.ok) {
+      throw new Error(`Request failed: ${response.statusText}`);
     }
+
+    const data = await response.json();
+    if (!data?.optimizedLocator) {
+      throw new Error("Invalid response format");
+    }
+
+    console.log(`Optimized ${type.toUpperCase()} Locator:`, data.optimizedLocator);
+    return data.optimizedLocator;
+
   } catch (error) {
     console.error(`Error optimizing ${type.toUpperCase()} locator:`, error);
+    alert("An error occurred while optimizing. Please try again later.");
     return null;
+  } finally {
+    //Hide loading state
+    toggleLoadingState(loadingSpinner, button, false);
   }
 }
 
-//Function to handle optimization for both XPath and CSS
+//Function to handle the click and call optimization
 function handleOptimizeClick(type) {
-  const xpathLocator = document.getElementById("check-locator-xpath").value;
-  const cssLocator = document.getElementById("check-locator-css").value;
+  const locatorInput = type === "xpath"
+    ? document.getElementById("check-locator-xpath")
+    : document.getElementById("check-locator-css");
 
-  let currentLocator;
-
-  if (type === "xpath" && xpathLocator && xpathLocator !== "XPath:") {
-    currentLocator = xpathLocator;
-  } else if (type === "css" && cssLocator && cssLocator !== "CSS:") {
-    currentLocator = cssLocator;
-  } else {
-    alert(`Please enter a valid ${type.toUpperCase()} selector to optimize.`);
+  if (!locatorInput) {
+    console.error(`Could not find the ${type} input field`);
     return;
   }
 
-  //Call the Cloud Function to optimize the locator
-  optimizeLocator(currentLocator, type).then((optimizedLocator) => {
-    if (optimizedLocator) {
-      //Update the respective validated locator field
-      const validatedLocatorField =
-        type === "xpath"
+  const locator = locatorInput.value;
+
+  if (!locator) {
+    console.warn(`Please provide a valid ${type} locator before optimizing.`);
+    alert(`Please enter a valid ${type.toUpperCase()} locator to optimize.`);
+    return;
+  }
+
+  console.log(`Calling optimizeLocator for ${type.toUpperCase()} with locator:`, locator);
+  optimizeLocator(locator, type)
+    .then((optimizedLocator) => {
+      if (optimizedLocator) {
+        const validationInput = type === "xpath"
           ? document.getElementById("check-locator-xpath")
           : document.getElementById("check-locator-css");
 
-      if (validatedLocatorField) {
-        validatedLocatorField.value = optimizedLocator; //Update the validated locator field
-        alert("Locator has been optimized sucessfully \n" + optimizedLocator);//Display in the AI Validated Locator field
-      } else {
-        console.error(
-          `Validated locator field for ${type.toUpperCase()} not found.`
-        );
+        if (validationInput) {
+          validationInput.value = optimizedLocator;
+          alert(`Locator has been optimized successfully: ${validationInput.value}`);
+        }
       }
-    } else {
-      alert(`Failed to optimize ${type.toUpperCase()} locator.`);
-    }
-  });
+    })
+    .catch((error) => {
+      console.error(`Error occurred while optimizing ${type.toUpperCase()} locator:`, error);
+      alert("An error occurred while optimizing. Please try again later.");
+    });
 }
 
 //Listen for messages from the content.js
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === 'displayLocator' && message.xpath && message.cssSelector) {
-    console.log("Received XPath and CSS from content script:", message);
+      console.log("Received XPath and CSS from content script:", message);
 
-    //Delegate responsibility to displayLocatorInSidebar
-    displayLocatorInSidebar(message.xpath, message.cssSelector);
+      //Use a simple flag to prevent double execution
+      if (sender.tab && sender.tab.id && !sender.tab.processed) {
+          sender.tab.processed = true; 
 
-    sendResponse({ status: "XPath and CSS displayed in sidebar (and added to tables if in batch mode)" });
+          //Delegate responsibility to displayLocatorInSidebar
+          displayLocatorInSidebar(message.xpath, message.cssSelector);
+
+          sendResponse({ status: "XPath and CSS displayed in sidebar (and added to tables if in batch mode)" });
+
+          //Reset flag after a short delay to allow future messages if necessary
+          setTimeout(() => {
+              sender.tab.processed = false;
+          }, 500);
+      }
   } else {
-    console.warn("Invalid message received or missing locators:", message);
-    sendResponse({ status: "Invalid message or missing locators" });
+      console.warn("Invalid message received or missing locators:", message);
+      sendResponse({ status: "Invalid message or missing locators" });
   }
 });
-
 
 //Triggers the Start/Stop Detection in the content.js
 document.getElementById('toggle-detection').addEventListener('click', () => {
@@ -397,12 +424,51 @@ document.getElementById('export-locators').addEventListener('click', () => {
 //Event listener to the Clear Table button
 document.getElementById('clear-table').addEventListener('click', clearLocators);
 
-//Event listeners for the XPath and CSS Optimize buttons
-document.getElementById("validate-locator-xpath").addEventListener("click", () => {
-    handleOptimizeClick("xpath");
+document.addEventListener("DOMContentLoaded", () => {
+  //Generic function to add an event listener for optimizing locators
+  const addOptimizeEventListener = (locatorType) => {
+    const button = document.getElementById(`validate-locator-${locatorType}`);
+    const input = document.getElementById(`check-locator-${locatorType}`);
+    
+    if (button && input) {
+      button.addEventListener("click", async () => {
+        if (!input.value) {
+          alert(`Please enter a valid ${locatorType.toUpperCase()} locator to optimize.`);
+          return;
+        }
+
+        console.log(`Optimize button clicked for ${locatorType.toUpperCase()}`);
+        const optimizedLocator = await optimizeLocator(input.value, locatorType);
+        if (optimizedLocator) {
+          input.value = optimizedLocator;
+        }
+      });
+    }
+  };
+
+  //Add event listeners for XPath and CSS buttons
+  addOptimizeEventListener("xpath");
+  addOptimizeEventListener("css");
 });
-document.getElementById("validate-locator-css").addEventListener("click", () => {
-    handleOptimizeClick("css");
+
+document.addEventListener("DOMContentLoaded", () => {
+  //Event listener for the XPath Optimize button
+  const xpathButton = document.getElementById("validate-locator-xpath");
+  if (xpathButton) {
+    xpathButton.addEventListener("click", () => {
+      console.log("Optimize button clicked for XPath");
+      handleOptimizeClick("xpath");
+    });
+  }
+
+  //Event listener for the CSS Optimize button
+  const cssButton = document.getElementById("validate-locator-css");
+  if (cssButton) {
+    cssButton.addEventListener("click", () => {
+      console.log("Optimize button clicked for CSS");
+      handleOptimizeClick("css");
+    });
+  }
 });
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -420,7 +486,7 @@ document.addEventListener("DOMContentLoaded", () => {
     switchTab("css");
   });
 
-  // Function to switch tabs
+  //Function to switch tabs
   function switchTab(tab) {
     if (tab === "xpath") {
       xpathTab.classList.add("active");

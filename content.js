@@ -47,41 +47,53 @@ if (!window.hasRun) {
     console.log("Hovered element:", selectedElement);
   }
 
-  // Function to handle click events on elements
+  //Function to handle click events on elements
+  //Set to keep track of processed locators to prevent duplicate messages
+  const processedLocators = new Set();
   function handleElementClick(event) {
-    if (!detectionActive) {
-      console.log("Detection is not active, skipping click handling.");
-      return;
-    }
+      if (!detectionActive) {
+          console.log("Detection is not active, skipping click handling.");
+          return;
+      }
+      event.preventDefault(); //Prevent default click behavior
+      event.stopPropagation(); //Stop event propagation
+      const element = event.target;
+      const xpath = generateXPath(element);
+      const cssSelector = generateCSSSelector(element);
+      const locatorKey = `${xpath}|${cssSelector}`; //Unique key for the locator combination
 
-    event.preventDefault(); //Prevent default click behavior
-    event.stopPropagation(); //Stop event propagation
+      //Check if this locator has already been processed
+      if (processedLocators.has(locatorKey)) {
+          console.warn("This locator has already been processed, skipping.");
+          return;
+      }
 
-    const element = event.target;
-    const xpath = generateXPath(element);
-    const cssSelector = generateCSSSelector(element);
-
-    console.log("Detected XPath:", xpath);
-    console.log("Detected CSS Selector:", cssSelector);
-
-    // Always send both XPath and CSS Selector to the sidebar for processing
-    try {
-      chrome.runtime.sendMessage(
-        { action: 'displayLocator', xpath, cssSelector },
-        (response) => {
-          if (chrome.runtime.lastError) {
-            console.error("Error sending message to sidebar:", chrome.runtime.lastError.message);
-          } else if (response) {
-            console.log("XPath and CSS Selector sent to sidebar successfully:", response);
-          } else {
-            console.warn("No response from sidebar. It might not be listening.");
-          }
-        }
-      );
-    } catch (error) {
-      console.error("Error: Unable to send message to sidebar. Extension context might be invalidated.", error);
-    }
+      //Add locator to processed set
+      processedLocators.add(locatorKey);
+      console.log("Detected XPath:", xpath);
+      console.log("Detected CSS Selector:", cssSelector);
+      //Always send both XPath and CSS Selector to the sidebar for processing
+      try {
+          chrome.runtime.sendMessage(
+              { action: 'displayLocator', xpath, cssSelector },
+              (response) => {
+                  if (chrome.runtime.lastError) {
+                      console.error("Error sending message to sidebar:", chrome.runtime.lastError.message);
+                  } else if (response) {
+                      console.log("XPath and CSS Selector sent to sidebar successfully:", response);
+                  } else {
+                      console.warn("No response from sidebar. It might not be listening.");
+                  }
+                  //Remove from processed set after the response is handled
+                  processedLocators.delete(locatorKey);
+              }
+          );
+      } catch (error) {
+          console.error("Error: Unable to send message to sidebar. Extension context might be invalidated.", error);
+          processedLocators.delete(locatorKey);
+      }
   }
+
 
   //This is a function where the user can interact with the extension.
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
