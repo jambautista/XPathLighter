@@ -370,7 +370,7 @@ th {
   margin-bottom: 12px;
 }
 
-#export-locators:hover #clear-table:hover{
+#export-locators:hover, #clear-table:hover{
   background-color: #E5B437;
 }
 
@@ -391,7 +391,7 @@ th {
   font-size: 14px;
 }
 
-#validate-locator-xpath, #validate-locator-css {
+#optimize-locator-xpath, #optimize-locator-css {
   padding: 8px;
   font-size: 14px;
   background-color: #F4C13F;
@@ -402,7 +402,7 @@ th {
   transition: background-color 0.3s ease;
 }
 
-#validate-locator-xpath:hover, #validate-locator-css:hover {
+#optimize-locator-xpath:hover, #optimize-locator-css:hover {
   background-color: #E5B437;
 }
 

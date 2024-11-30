@@ -4,8 +4,8 @@ function displayLocatorInSidebar(xpath, cssSelector) {
 
   console.log("Displaying in sidebar - XPath:", xpath, "CSS Selector:", cssSelector, "Batch mode:", batchMode);
 
-  const validateXpath = document.getElementById('check-locator-xpath');
-  const validateCSS = document.getElementById('check-locator-css');
+  const optimizeXPath = document.getElementById('check-locator-xpath');
+  const optimizeCSS = document.getElementById('check-locator-css');
 
   if (batchMode) {
     //Add XPath and CSS locators to their respective tables
@@ -13,14 +13,14 @@ function displayLocatorInSidebar(xpath, cssSelector) {
     addLocatorToTable(cssSelector, 'css');
 
     //Update validation fields in batch mode to allow optimization during batch mode
-    if (validateXpath) {
-      validateXpath.value = xpath;
+    if (optimizeXPath) {
+      optimizeXPath.value = xpath;
     } else {
       console.error("Validation XPath field not found.");
     }
 
-    if (validateCSS) {
-      validateCSS.value = cssSelector;
+    if (optimizeCSS) {
+      optimizeCSS.value = cssSelector;
     } else {
       console.error("Validation CSS field not found.");
     }
@@ -32,14 +32,14 @@ function displayLocatorInSidebar(xpath, cssSelector) {
 
     if (xpathInput) {
       xpathInput.value = xpath;
-      validateXpath.value = xpath;
+      optimizeXPath.value = xpath;
     } else {
       console.error("XPath input field not found.");
     }
 
     if (cssInput) {
       cssInput.value = cssSelector;
-      validateCSS.value = cssSelector;
+      optimizeCSS.value = cssSelector;
     } else {
       console.error("CSS selector input field not found.");
     }
@@ -261,7 +261,7 @@ function toggleLoadingState(loadingSpinner, button, isLoading) {
 //Function to call the Cloud Function for optimizing the locator
 async function optimizeLocator(locator, type) {
   const loadingSpinner = document.getElementById('loading-spinner');
-  const button = document.getElementById(`validate-locator-${type}`);
+  const button = document.getElementById(`optimize-locator-${type}`);
 
   //Show loading state
   toggleLoadingState(loadingSpinner, button, true);
@@ -427,7 +427,7 @@ document.getElementById('clear-table').addEventListener('click', clearLocators);
 document.addEventListener("DOMContentLoaded", () => {
   //Generic function to add an event listener for optimizing locators
   const addOptimizeEventListener = (locatorType) => {
-    const button = document.getElementById(`validate-locator-${locatorType}`);
+    const button = document.getElementById(`optimize-locator-${locatorType}`);
     const input = document.getElementById(`check-locator-${locatorType}`);
     
     if (button && input) {
@@ -453,7 +453,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 document.addEventListener("DOMContentLoaded", () => {
   //Event listener for the XPath Optimize button
-  const xpathButton = document.getElementById("validate-locator-xpath");
+  const xpathButton = document.getElementById("optimize-locator-xpath");
   if (xpathButton) {
     xpathButton.addEventListener("click", () => {
       console.log("Optimize button clicked for XPath");
@@ -462,7 +462,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   //Event listener for the CSS Optimize button
-  const cssButton = document.getElementById("validate-locator-css");
+  const cssButton = document.getElementById("optimize-locator-css");
   if (cssButton) {
     cssButton.addEventListener("click", () => {
       console.log("Optimize button clicked for CSS");
